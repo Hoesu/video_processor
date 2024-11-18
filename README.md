@@ -16,8 +16,8 @@
   <img alt="mouth" src="assets/mouth.gif" width="30%">
 </p>
 
-<div class="flex-container">
-  <div class="item">A</div>
-  <div class="item">B</div>
-  <div class="item">C</div>
+<div style="display: flex; justify-content: space-evenly;">
+  <span>A</span>
+  <span>B</span>
+  <span>C</span>
 </div>
