@@ -35,7 +35,6 @@
   mean_face_path: "misc/20words_mean_face.npy"
   face_predictor_path: "misc/shape_predictor_68_face_landmarks.dat"
 
-
   ##
   ##
   ##      18    19    20               23    24    25
@@ -68,13 +67,10 @@
   custom_target: []            ## You can create a list of indices for customization!
                                ## this must be left empty if you desire to use presets.
   
-
-
   ## Video Landmark Options
   skip_frames: 10              ## Only detect landmarks from every n frames. (faster speed)
   resized_frame_height: 100    ## Resize before detection to enhance speed.
   resized_frame_width: 200     ## Even for high quality videos, dlib can detect pretty well in small resolutions.
-
 
   ## Video Crop Options
   stablePntsIDs: [33, 36, 39, 42, 45] ## DO NOT CHANGE: Reference landmark indices.
