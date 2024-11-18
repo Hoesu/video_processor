@@ -11,3 +11,11 @@
   <img src="assets/nose.gif" alt="GIF 2" style="width: 30%; max-width: 200px;">
   <img src="assets/mouth.gif" alt="GIF 3" style="width: 30%; max-width: 200px;">
 </div>
+
+<p align="center">
+  <img alt="GIF 1" src="assets/eye.gif" width="30%">
+&nbsp; &nbsp; &nbsp; &nbsp;
+  <img alt="GIF 2" src="assets/nose.gif" width="30%">
+&nbsp; &nbsp; &nbsp; &nbsp;
+  <img alt="GIF 3" src="assets/mouth.gif" width="30%">
+</p>
