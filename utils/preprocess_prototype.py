@@ -438,7 +438,7 @@ class VideoFeatureExtractor:
         skvideo.io.vwrite(roi_path, rois, inputdict={'-r': str(self.frame_per_second)})
         
         # 오디오 추출
-        cmd = f"/root/miniconda3/envs/factor/bin/ffmpeg -i {self.input_video_path} -f wav -vn -y {audio_fn} -loglevel quiet"
+        cmd = f"/root/miniconda3/envs/video/bin/ffmpeg -i {self.input_video_path} -f wav -vn -y {audio_fn} -loglevel quiet"
         subprocess.call(cmd, shell=True)
         return
     
