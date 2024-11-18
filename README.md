@@ -16,5 +16,28 @@
   <img alt="mouth" src="assets/mouth.gif" width="30%">
 </p>
 
-| Eye ROI | Nose ROI | Mouth ROI |
-|---------|----------|-----------|
+.container {
+  display: flex;
+}
+.container.space-around {
+  justify-content: space-around;
+}
+.container.space-between {  
+  justify-content: space-between;
+}
+
+<p>Using <code>justify-content: space-around</code>:</p>
+<div class="container space-around">
+  <div>A</div>
+  <div>B</div>
+  <div>C</div>
+</div>
+
+<hr />
+
+<p>Using <code>justify-content: space-between</code>:</p>
+<div class="container space-between">
+  <div>A</div>
+  <div>B</div>
+  <div>C</div>
+</div>
