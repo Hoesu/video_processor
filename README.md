@@ -36,7 +36,7 @@
   face_predictor_path: "misc/shape_predictor_68_face_landmarks.dat"
 
 
-  ## ROI Settings
+  ##
   ##
   ##      18    19    20               23    24    25
   ##  17                   21      22                   26
@@ -60,27 +60,28 @@
   ##                7                     9
   ##                           8
   ##
-  ## 프리셋 중 하나를 골라서 사용할 수 있습니다.
-  ## mouth, nose, right eye, right cheek, right eyebrow, left eye, left cheek, left eyebrow,
-  roi_target: "right eye"
-  ## 새로운 커스텀 프리셋을 만들어 사용할 수 있습니다.
-  ## 원하는 인덱스들을 골라서 리스트 안에 담아주세요.
-  ## 기존 프리셋을 사용하기 원하는 경우, 리스트를 비워두세요.
-  custom_target: []
+  ## ROI Settings
+  roi_target: "right eye"      ## PRESETS: mouth, nose, right eye,
+                               ##          right cheek, right eyebrow,
+                               ##          left eye, left cheek, left eyebrow
+
+  custom_target: []            ## You can create a list of indices for customization!
+                               ## this must be left empty if you desire to use presets.
+  
 
 
   ## Video Landmark Options
-  skip_frames: 10
-  resized_frame_height: 100
-  resized_frame_width: 200
+  skip_frames: 10              ## Only detect landmarks from every n frames. (faster speed)
+  resized_frame_height: 100    ## Resize before detection to enhance speed.
+  resized_frame_width: 200     ## Even for high quality videos, dlib can detect pretty well in small resolutions.
 
 
   ## Video Crop Options
-  stablePntsIDs: [33, 36, 39, 42, 45]
-  std_size: [256, 256]
-  crop_height: 96
-  crop_width: 96
-  window_margin: 12
+  stablePntsIDs: [33, 36, 39, 42, 45] ## DO NOT CHANGE: Reference landmark indices.
+  std_size: [256, 256]         ## Output resolution of cut_patch.
+  crop_height: 96              ## Output ROI frame height.
+  crop_width: 96               ## Output ROI frame width.
+  window_margin: 12            ## Window margin for rolling buffer.
 ```
 
 ## Deployment
