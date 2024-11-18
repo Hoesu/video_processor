@@ -16,8 +16,5 @@
   <img alt="mouth" src="assets/mouth.gif" width="30%">
 </p>
 
-<div style="display: flex; justify-content: space-evenly;">
-  <span>Eye ROI</span>
-  <span>Nose ROI</span>
-  <span>Mouth ROI</span>
-</div>
+| Eye ROI | Nose ROI | Mouth ROI |
+|---------|----------|-----------|
