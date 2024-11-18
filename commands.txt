@@ -1,0 +1,31 @@
+chmod +x miniconda.sh
+./miniconda.sh
+
+conda create -n factor python==3.9 -y
+conda activate factor
+conda install -c conda-forge ffmpeg -y
+pip install -r requirements.txt
+pip install "pip<24.1"
+
+git clone https://github.com/facebookresearch/av_hubert.git
+cd av_hubert/avhubert
+git submodule init
+git submodule update
+cd ../fairseq
+pip install --editable ./
+cd ../../
+
+mkdir -p misc/
+wget http://dlib.net/files/shape_predictor_68_face_landmarks.dat.bz2 -O misc/shape_predictor_68_face_landmarks.dat.bz2
+bzip2 -d misc/shape_predictor_68_face_landmarks.dat.bz2
+wget --content-disposition https://github.com/mpc001/Lipreading_using_Temporal_Convolutional_Networks/raw/master/preprocessing/20words_mean_face.npy -O misc/20words_mean_face.npy
+wget https://dl.fbaipublicfiles.com/avhubert/model/lrs3/vsr/large_lrs3_30h.pt -O misc/model.pt
+
+mv preprocess.py av_hubert/avhubert/
+mv inference.py av_hubert/avhubert/
+mv eval.py av_hubert/avhubert/
+
+mv abstract.py /root/miniconda3/envs/factor/lib/python3.9/site-packages/skvideo/io/
+mv indexed_dataset.py av_hubert/fairseq/fairseq/data
+
+ffmpeg 파일에서 int64로 바꾸기
