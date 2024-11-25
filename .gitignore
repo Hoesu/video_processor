@@ -3,6 +3,7 @@ av_hubert/
 data/
 editing_required/
 misc/
+.DS_Store
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -45,6 +45,7 @@ mkdir -p misc/
 wget http://dlib.net/files/shape_predictor_68_face_landmarks.dat.bz2 -O misc/shape_predictor_68_face_landmarks.dat.bz2
 bzip2 -d misc/shape_predictor_68_face_landmarks.dat.bz2
 wget --content-disposition https://github.com/mpc001/Lipreading_using_Temporal_Convolutional_Networks/raw/master/preprocessing/20words_mean_face.npy -O misc/20words_mean_face.npy
+wget https://dl.fbaipublicfiles.com/avhubert/model/lrs3/vsr/large_lrs3_30h.pt -O misc/model.pt
 
 # Step 6: Create necessary directories
 echo "Creating directories..."
@@ -55,5 +56,7 @@ mkdir -p data/audio/
 # Step 7: Fix skvideo issue
 echo "Fixing skvideo issue..."
 mv utils/abstract.py ~/miniconda3/envs/video/lib/python3.9/site-packages/skvideo/io/
+mv utils/inference.py av_hubert/avhubert/
+mv utils/indexed_dataset.py av_hubert/fairseq/fairseq/data/
 
 echo "Setup completed successfully!"
