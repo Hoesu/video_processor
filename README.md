@@ -1,4 +1,4 @@
-# Video ROI Extractor & AV_HuBERT Inference
+# Video ROI Extractor & FACTOR Inference
 
 <p align="center">
   <img alt="original" src="assets/original.gif" width="100%">
@@ -85,5 +85,9 @@
 ## Deployment
 
 ```bash
+  ## If you want to extract ROI and audio from files in data/video...
   python utils/preprocess.py -c config.yaml
+
+  ## If you want to calculate truth scores from ROI and audio...
+  python av_hubert/avhubert/inference.py --dummy "dummy"
 ```
