@@ -1,4 +1,4 @@
-# Video ROI Extractor!
+# Video ROI Extractor & AV_HuBERT Inference
 
 <p align="center">
   <img alt="original" src="assets/original.gif" width="100%">
