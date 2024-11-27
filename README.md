@@ -16,12 +16,14 @@
 ## Environment
 
 ```bash
+  ## This project was conducted using VESSL workspace.
   VESSL CONTAINER: PyTorch 2.3.1 (CUDA 12.1)
 ```
 
 ## Installation
 
 ```bash
+  ## Set-up takes about 10~20 minutes depending on your environment.
   chmod +x setup.sh
   ./setup.sh
 ```
