@@ -1,17 +1,13 @@
-import os
-import sys
 import torch
 import librosa
 import argparse
 import numpy as np
-from tqdm import tqdm
 import torch.nn.functional as F
 from python_speech_features import logfbank
 from argparse import Namespace
 
 import utils as avhubert_utils
-import fairseq
-from fairseq import checkpoint_utils, options, tasks, utils
+from fairseq import checkpoint_utils, utils
 
 def load_audio(audio_path: str, stack_size: int) -> torch.Tensor:
     """
@@ -65,7 +61,7 @@ def load_audio(audio_path: str, stack_size: int) -> torch.Tensor:
 
 def load_video(video_path: str, task: object) -> torch.Tensor:
     """
-    비디오 파일을 로드하고, 모델에 입력하기 적합한 형태로 전처리합니다.
+    비디오 파일을 로드하고, 모델에 입력하기 적합한 형태로 전처리한다.
 
     Args:
         video_path: 입력 비디오 파일 경로.
@@ -83,120 +79,126 @@ def load_video(video_path: str, task: object) -> torch.Tensor:
             - H: 프레임의 높이
             - W: 프레임의 너비
     """
+    ## 비디오 ROI 파일에서 프레임을 로드.
     video_feats = avhubert_utils.load_video(video_path)
+    ## 비디오 프레임 전처리를 위한 변환(transform) 파이프라인을 정의.
     transform = avhubert_utils.Compose([
+        ## 픽셀 값을 [0, 255] 범위에서 [0.0, 1.0] 범위로 정규화.
         avhubert_utils.Normalize(0.0, 255.0),
+        ## 비디오 프레임의 중심을 기준으로 설정된 크기로 자른다.
         avhubert_utils.CenterCrop((task.cfg.image_crop_size, task.cfg.image_crop_size)),
+        ## 픽셀 값을 평균과 표준편차로 정규화.
         avhubert_utils.Normalize(task.cfg.image_mean, task.cfg.image_std)])
+
+    ## 정의한 변환을 비디오 프레임에 적용.
     video_feats = transform(video_feats)
-    video_feats = torch.FloatTensor(video_feats).unsqueeze(dim=0).unsqueeze(dim=0)
+    ## 변환된 비디오 데이터를 PyTorch 텐서로 변환.
+    video_feats = torch.FloatTensor(video_feats)
+    ## 모델 입력 형식에 맞추기 위해 배치 차원, 채널 차원 추가.
+    video_feats = video_feats.unsqueeze(dim=0).unsqueeze(dim=0)
     return video_feats
 
 
-def extract_feature(checkpoint_path, video_path, audio_path, dummy=False):
+def extract_feature(checkpoint_path: str,
+                    video_path: str,
+                    audio_path: str) -> tuple[np.ndarray, np.ndarray]:
     """
-    오디오 및 비디오 데이터를 입력으로 받아, 사전 학습된 모델을 사용해 
-    특징(feature) 벡터를 추출합니다.
+    오디오 및 비디오 데이터를 입력으로 받아, AV-HuBERT를 사용해 특징 벡터를 추출.
 
     Args:
-        checkpoint_path (str): 사전 학습된 모델의 체크포인트 파일 경로.
-        video_path (str): 입력 비디오 파일 경로.
-        audio_path (str): 입력 오디오 파일 경로.
+        checkpoint_path: 사전 학습된 모델의 체크포인트 파일 경로.
+        video_path: 입력 비디오 파일 경로.
+        audio_path: 입력 오디오 파일 경로.
 
     Returns:
         Tuple[np.ndarray, np.ndarray]:
             - feature_audio (np.ndarray): 추출된 오디오 특징 벡터.
-            - feature_vid (np.ndarray): 추출된 비디오 특징 벡터.
-
-    설명:
-        1. 체크포인트 파일을 로드하여 모델과 관련 작업(task) 객체를 생성합니다.
-        2. 비디오 데이터를 로드하고 전처리한 후 5D 텐서로 변환합니다.
-        3. 오디오 데이터를 로드하고 정규화한 후 3D 텐서로 변환합니다.
-        4. 오디오와 비디오의 시간 차원을 동기화하기 위해 잔여 프레임(`residual`)을 계산해 
-           자르거나 보정합니다.
-        5. 모델의 `extract_finetune` 메서드를 사용해 오디오 및 비디오의 특징 벡터를 추출합니다.
-        6. 추출된 특징 벡터는 NumPy 배열로 변환되어 반환됩니다.
+            - feature_video (np.ndarray): 추출된 비디오 특징 벡터.
     """
+    ## 디바이스 설정.
     if torch.cuda.is_available():
         device = torch.device("cuda")
     else:
         device = torch.device("cpu")
 
+    ##
     utils.import_user_module(Namespace(user_dir="av_hubert/avhubert"))
+
+    ## 체크포인트에서 AV-HuBERT 인코더와 태스크 로드.
     checkpoint, _, task = checkpoint_utils.load_model_ensemble_and_task([checkpoint_path])
     model = checkpoint[0].encoder.w2v_model
+
+    ## 모델 디바이스 보내고 평가 모드로 설정.
     model.to(device)
     model.eval()
 
+    ## ROI 비디오, 오디오 로드.
     video_feats = load_video(video_path, task=task)
     audio_feats = load_audio(audio_path, stack_size=4)
 
+    ## 오디오와 비디오 텐서 타임스텝 동기화.
     residual = video_feats.shape[2] - audio_feats.shape[-1]
     if residual > 0:
         video_feats = video_feats[:, :, :-residual]
     elif residual < 0:
         audio_feats = audio_feats[:, :, :residual]
 
+    ## 동기화된 비디오, 오디오 텐서 디바이스로 올리기.
     video_feats = video_feats.to(device)
     audio_feats = audio_feats.to(device)
-
+    
+    ## AV-HuBERT 인코더를 사용해 오디오와 비디오의 특징 벡터를 추출.
     with torch.no_grad():
         feature_audio, _ = model.extract_finetune(
             source={'video': None, 'audio': audio_feats},
             padding_mask=None,
             output_layer=None)
         feature_audio = feature_audio.squeeze(dim=0)
-        feature_vid, _ = model.extract_finetune(
+        feature_video, _ = model.extract_finetune(
             source={'video': video_feats, 'audio': None},
             padding_mask=None,
             output_layer=None)
-        feature_vid = feature_vid.squeeze(dim=0)
-    return feature_audio.cpu().numpy(), feature_vid.cpu().numpy()
+        feature_video = feature_video.squeeze(dim=0)
+    return feature_audio.cpu().numpy(), feature_video.cpu().numpy()
 
 
-parser = argparse.ArgumentParser()
-parser.add_argument('--dummy', type=str, default=None, help='A dummy argument for special cases')
-parser.add_argument('-c', '--check_path', type=str, default="misc/model.pt", required=False)
-parser.add_argument('-v', '--video_path', type=str, default="data/roi/video_mouth_roi.mp4", required=False)
-parser.add_argument('-a', '--audio_path', type=str, default="data/audio/video.wav", required=False)
-args = parser.parse_args()
+def evaluate(feature_video: np.ndarray,
+             feature_audio: np.ndarray) -> float:
+    """
+    """
+    ## 유사도 점수를 저장할 리스트
+    similarity_scores = []
 
-a, b = extract_feature(
-    checkpoint_path=args.check_path,
-    video_path=args.video_path,
-    audio_path=args.audio_path)
-breakpoint()
-print("legeno")
+    ## 비디오, 오디오 특징 벡터의 각 프레임에 대해 계산
+    for i in range(feature_audio.shape[0]):
+        # 벡터 추출
+        feature_audio_vec = feature_audio[i]
+        feature_video_vec = feature_video[i]
+        # 벡터 정규화
+        feature_audio_unit = feature_audio_vec / np.linalg.norm(feature_audio_vec)
+        feature_video_unit = feature_video_vec / np.linalg.norm(feature_video_vec)
+        # 코사인 유사도 계산
+        similarity = np.dot(feature_audio_unit, feature_video_unit)
+        similarity_scores.append(similarity)
+
+    ## 0.03 분위수 값 추출
+    lambda_percentile = 3
+    final_score = np.percentile(similarity_scores, lambda_percentile)
+    return final_score
 
 
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--dummy', type=str, default=None, help='A dummy argument for special cases')
+    parser.add_argument('-c', '--check_path', type=str, default="misc/model.pt", required=False)
+    parser.add_argument('-v', '--video_path', type=str, default="data/roi/002_mouth_roi.mp4", required=False)
+    parser.add_argument('-a', '--audio_path', type=str, default="data/audio/002.wav", required=False)
+    args = parser.parse_args()
 
+    feature_video, feature_audio = extract_feature(
+        checkpoint_path=args.check_path,
+        video_path=args.video_path,
+        audio_path=args.audio_path)
 
-"""all_audio, all_video, paths = [], [], []
-counter = 0
-for root, dirs, files in tqdm(to_iterate, total=len(to_iterate)):
-    for file in files:
-        if file.endswith('.mp4') and not file.endswith('_roi.mp4'):
-            counter += 1
-            prefix = root.split('FakeAVCeleb_v1.2/')[1]
-            mouth_roi_path = root + '/' + file[:-4] + '_roi.mp4'
-            audio_path = root + '/' + file[:-4] + '.wav'
-            try:
-                feature_audio, feature_vid = extract_visual_feature(model, mouth_roi_path, audio_path)
-            except:
-                continue
-            all_audio.append(feature_audio)
-            all_video.append(feature_vid)
-            paths.append(prefix + '/' + file)
-cur_split = input_root.split('/')[-1]
-all_audio = np.array(all_audio, dtype=object)
-all_video = np.array(all_video, dtype=object)
-paths = np.array(paths, dtype=object)
-cur_dir = os.path.join(user_dir, cur_split+'_features')
-if os.path.exists(cur_dir) is False:
-    os.makedirs(cur_dir, exist_ok=True)
-print(f'{cur_split} number of videos: {counter}')
-print(f'{cur_split} shape of audio features: {all_audio.shape}')
-print(f'{cur_split} shape of video features: {all_video.shape}')
-np.save(f'{cur_dir}/audio.npy', all_audio)
-np.save(f'{cur_dir}/video.npy', all_video)
-np.save(f'{cur_dir}/paths.npy', paths)"""
+    score = evaluate(feature_video, feature_audio)
+    print(score)
